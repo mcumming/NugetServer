@@ -3,18 +3,14 @@
 
 FROM mono:latest
 
-# Install dependencies
+# Install dependencies and XSP (Mono's ASP.NET web server) in a single layer
 RUN apt-get update && \
     apt-get install -y \
     ca-certificates \
     wget \
     unzip \
+    mono-xsp4 \
     && rm -rf /var/lib/apt/lists/*
-
-# Install XSP (Mono's ASP.NET web server)
-RUN apt-get update && \
-    apt-get install -y mono-xsp4 && \
-    rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
