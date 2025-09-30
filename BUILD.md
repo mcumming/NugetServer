@@ -14,9 +14,41 @@ You need:
 
 - Docker (Linux, macOS, or Windows with WSL2)
 
-## Quick Build (Recommended)
+## Build Options
 
-The easiest way to build the entire solution is to use the automated build script:
+### Option 1: CI/CD Pipeline (Recommended for Production)
+
+The repository includes a GitHub Actions workflow that automatically builds and publishes Docker images.
+
+**Workflow Location:** `.github/workflows/build.yml`
+
+**Triggers:**
+- Push to `main` or `develop` branches
+- Pull requests to `main`
+- Manual dispatch via GitHub Actions UI
+
+**What it does:**
+1. Restores .NET dependencies
+2. Builds the project in Release configuration
+3. Verifies build output
+4. Creates Docker image with tags `nuget-server:latest` and `nuget-server:<commit-sha>`
+5. Compresses and publishes the image as a build artifact
+
+**Using the artifact:**
+1. Navigate to the [Actions tab](../../actions) in GitHub
+2. Select the latest successful workflow run
+3. Download the `nuget-server-image` artifact
+4. Load the image:
+   ```bash
+   gunzip -c nuget-server.tar.gz | docker load
+   docker run -d -p 8080:8080 --name nuget-server nuget-server:latest
+   ```
+
+**Artifact retention:** Build artifacts are retained for 30 days.
+
+### Option 2: Local Build Script
+
+The easiest way to build locally is to use the automated build script:
 
 ```bash
 ./build.sh
@@ -37,11 +69,11 @@ To load the saved image later:
 gunzip -c artifacts/nuget-server_latest.tar.gz | docker load
 ```
 
-## Manual Build Steps
+### Option 3: Manual Build Steps
 
 If you prefer to build manually or need more control:
 
-### Step 1: Restore NuGet Packages
+#### Step 1: Restore NuGet Packages
 
 The project uses SDK-style format with PackageReference:
 

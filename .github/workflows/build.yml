@@ -1,0 +1,77 @@
+name: Build NuGet Server Docker Image
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '6.0.x'
+    
+    - name: Restore dependencies
+      run: dotnet restore NugetServer/NugetServer.csproj
+    
+    - name: Build project
+      run: dotnet build NugetServer/NugetServer.csproj -c Release --no-restore
+    
+    - name: Verify build output
+      run: |
+        if [ ! -f "NugetServer/bin/Release/net48/NugetServer.dll" ]; then
+          echo "Error: Build output not found"
+          exit 1
+        fi
+        echo "Build output verified successfully"
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Build Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./Dockerfile
+        push: false
+        tags: nuget-server:${{ github.sha }},nuget-server:latest
+        outputs: type=docker,dest=/tmp/nuget-server.tar
+    
+    - name: Compress Docker image
+      run: |
+        gzip /tmp/nuget-server.tar
+        echo "Image size: $(du -h /tmp/nuget-server.tar.gz | cut -f1)"
+    
+    - name: Upload Docker image as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: nuget-server-image
+        path: /tmp/nuget-server.tar.gz
+        retention-days: 30
+    
+    - name: Generate build summary
+      run: |
+        echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Docker image built successfully" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Image Details:**" >> $GITHUB_STEP_SUMMARY
+        echo "- Tags: \`nuget-server:${{ github.sha }}\`, \`nuget-server:latest\`" >> $GITHUB_STEP_SUMMARY
+        echo "- Artifact: \`nuget-server.tar.gz\`" >> $GITHUB_STEP_SUMMARY
+        echo "- Size: $(du -h /tmp/nuget-server.tar.gz | cut -f1)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**To use this image:**" >> $GITHUB_STEP_SUMMARY
+        echo '```bash' >> $GITHUB_STEP_SUMMARY
+        echo "# Download the artifact from the Actions tab" >> $GITHUB_STEP_SUMMARY
+        echo "gunzip -c nuget-server.tar.gz | docker load" >> $GITHUB_STEP_SUMMARY
+        echo "docker run -d -p 8080:8080 --name nuget-server nuget-server:latest" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY

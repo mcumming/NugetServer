@@ -20,9 +20,22 @@ Mono allows the .NET Framework application to run on Linux containers, providing
 ### Prerequisites
 
 - Docker (Linux, macOS, or Windows with WSL2)
-- .NET SDK (for building the application)
+- .NET SDK (for building the application locally)
 
-### Automated Build (Recommended)
+### Using Pre-built Image from CI/CD
+
+The easiest way to get started is to use a pre-built image from the GitHub Actions artifacts:
+
+1. Go to the [Actions tab](../../actions) in this repository
+2. Click on the latest successful build
+3. Download the `nuget-server-image` artifact
+4. Load the image:
+   ```bash
+   gunzip -c nuget-server.tar.gz | docker load
+   docker run -d -p 8080:8080 --name nuget-server nuget-server:latest
+   ```
+
+### Automated Local Build
 
 Use the provided build script to build the project and create a Docker image:
 
@@ -51,11 +64,30 @@ docker-compose up -d
 
 The NuGet server will be available at `http://localhost:8080/nuget`
 
+## CI/CD Pipeline
+
+This repository includes a GitHub Actions workflow (`.github/workflows/build.yml`) that automatically:
+
+- Builds the .NET project
+- Creates a Docker image
+- Publishes the image as a build artifact
+- Runs on push to main/develop branches and pull requests
+
+The workflow produces a `nuget-server-image` artifact that can be downloaded from the Actions tab and loaded with:
+
+```bash
+gunzip -c nuget-server.tar.gz | docker load
+```
+
 ## Building the Application
 
-### Option 1: Automated Build Script (Recommended)
+### Option 1: CI/CD Pipeline (Recommended for Production)
 
-The easiest way to build everything is to use the provided `build.sh` script:
+Push your changes to trigger the automated build pipeline. The Docker image will be available as a downloadable artifact from the GitHub Actions run.
+
+### Option 2: Automated Build Script
+
+The easiest way to build locally is to use the provided `build.sh` script:
 
 ```bash
 ./build.sh
@@ -76,7 +108,7 @@ To load the saved image later:
 gunzip -c artifacts/nuget-server_latest.tar.gz | docker load
 ```
 
-### Option 2: Manual Build
+### Option 3: Manual Build
 
 The NuGet.Server application must be built before creating the Docker image.
 
