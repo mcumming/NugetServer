@@ -1,37 +1,36 @@
 # Building NuGet.Server Docker Container
 
-This guide explains how to build and run the NuGet.Server Docker container using the official NuGet.Server package.
+This guide explains how to build and run the NuGet.Server Docker container using the official NuGet.Server package with Mono on Linux.
 
 ## Prerequisites
 
 ### For Building the Application
 
-You need a Windows machine with:
-- Visual Studio 2019 or later with ASP.NET and web development workload
-- .NET Framework 4.8 SDK
+You need:
+- Visual Studio 2019 or later with ASP.NET and web development workload (Windows)
+- OR MSBuild and .NET Framework 4.8 SDK
 - NuGet CLI tools
 
 ### For Running the Container
 
-- Docker Desktop for Windows with Windows containers enabled
-- Windows 10/11 Pro or Windows Server 2019/2022
+- Docker (Linux, macOS, or Windows with WSL2)
 
 ## Build Steps
 
 ### Step 1: Install NuGet CLI (if not already installed)
 
-```powershell
+```bash
 # Download NuGet.exe
-Invoke-WebRequest -Uri https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile nuget.exe
-
-# Add to PATH or use full path
+wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
+# Or on Windows PowerShell:
+# Invoke-WebRequest -Uri https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile nuget.exe
 ```
 
 ### Step 2: Restore NuGet Packages
 
-```powershell
+```bash
 cd NugetServer
-..\nuget.exe restore packages.config -PackagesDirectory ..\packages
+nuget restore packages.config -PackagesDirectory ../packages
 ```
 
 This will download:
@@ -42,12 +41,10 @@ This will download:
 
 #### Option A: Using MSBuild (Command Line)
 
-```powershell
-# Locate MSBuild (adjust path for your Visual Studio version)
-$msbuild = "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
-
-# Build in Release mode
-& $msbuild NugetServer.csproj /p:Configuration=Release /p:Platform=AnyCPU
+```bash
+# On Windows, locate MSBuild (adjust path for your Visual Studio version)
+msbuild NugetServer.csproj /p:Configuration=Release /p:Platform=AnyCPU
+```
 ```
 
 #### Option B: Using Visual Studio
@@ -60,8 +57,8 @@ $msbuild = "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Curr
 
 Check that the build output exists:
 
-```powershell
-dir NugetServer\bin\Release
+```bash
+ls NugetServer/bin/Release
 ```
 
 You should see:
@@ -71,43 +68,34 @@ You should see:
 
 ### Step 5: Build Docker Image
 
-Switch Docker to Windows containers:
-
-```powershell
-# Switch to Windows containers (if not already)
-& "C:\Program Files\Docker\Docker\DockerCli.exe" -SwitchDaemon
-```
-
-Build the image:
-
-```powershell
+```bash
 cd ..  # Back to repository root
 docker build -t nuget-server .
 ```
 
 ### Step 6: Run the Container
 
-```powershell
-docker run -d -p 8080:80 `
-  -e NUGET_API_KEY=your-secret-key `
-  -v nuget-packages:C:\Packages `
-  --name nuget-server `
+```bash
+docker run -d -p 8080:8080 \
+  -e NUGET_API_KEY=your-secret-key \
+  -v nuget-packages:/var/nuget/packages \
+  --name nuget-server \
   nuget-server
 ```
 
 ### Step 7: Verify It's Working
 
-```powershell
+```bash
 # Test the endpoint
-Invoke-WebRequest -Uri http://localhost:8080/nuget -UseBasicParsing
+curl http://localhost:8080/nuget
 
 # Or open in browser
-Start-Process http://localhost:8080/nuget
+# Navigate to http://localhost:8080/nuget
 ```
 
 ## Alternative: Using Docker Compose
 
-```powershell
+```bash
 # With environment variables in .env file
 docker-compose up -d
 ```
@@ -116,7 +104,7 @@ docker-compose up -d
 
 ### Missing MSBuild
 
-If MSBuild is not found:
+If MSBuild is not found on Windows:
 
 ```powershell
 # Find MSBuild
@@ -129,8 +117,16 @@ Get-ChildItem "C:\Program Files\Microsoft Visual Studio\" -Recurse -Filter "MSBu
 # Clear NuGet cache
 nuget.exe locals all -clear
 
+```
+
+### NuGet Restore Fails
+
+```bash
+# Clear NuGet cache
+nuget locals all -clear
+
 # Try restore again
-nuget.exe restore packages.config -PackagesDirectory ..\packages
+nuget restore packages.config -PackagesDirectory ../packages
 ```
 
 ### Build Errors
@@ -142,45 +138,46 @@ Common issues:
 ### Docker Build Fails
 
 Ensure:
-- Docker is set to Windows containers mode
-- ServiceMonitor.exe download URL is accessible
+- You have build output in `NugetServer/bin/Release/`
+- Docker daemon is running
 - You have internet connectivity for base image download
 
 ## Automated Build Script
 
-Create `build.ps1`:
+Create `build.sh`:
 
-```powershell
+```bash
+#!/bin/bash
 # Build script for NuGet.Server Docker container
 
-Write-Host "Step 1: Restoring NuGet packages..." -ForegroundColor Green
-.\nuget.exe restore NugetServer\packages.config -PackagesDirectory packages
+echo "Step 1: Restoring NuGet packages..."
+nuget restore NugetServer/packages.config -PackagesDirectory packages
 
-Write-Host "Step 2: Building application..." -ForegroundColor Green
-$msbuild = Get-ChildItem "C:\Program Files\Microsoft Visual Studio\" -Recurse -Filter "MSBuild.exe" | Select-Object -First 1 -ExpandProperty FullName
-& $msbuild NugetServer\NugetServer.csproj /p:Configuration=Release /p:Platform=AnyCPU
+echo "Step 2: Building application..."
+msbuild NugetServer/NugetServer.csproj /p:Configuration=Release /p:Platform=AnyCPU
 
-Write-Host "Step 3: Building Docker image..." -ForegroundColor Green
+echo "Step 3: Building Docker image..."
 docker build -t nuget-server .
 
-Write-Host "Build complete!" -ForegroundColor Green
-Write-Host "Run with: docker run -d -p 8080:80 --name nuget-server nuget-server"
+echo "Build complete!"
+echo "Run with: docker run -d -p 8080:8080 --name nuget-server nuget-server"
 ```
 
 Run it:
 
-```powershell
-.\build.ps1
+```bash
+chmod +x build.sh
+./build.sh
 ```
 
 ## Continuous Integration
 
 For CI/CD pipelines, you'll need:
-- Windows-based build agents
-- Docker support with Windows containers
-- MSBuild and .NET Framework SDK pre-installed
+- Build agents with MSBuild and .NET Framework SDK
+- Docker support
+- NuGet CLI tools
 
-Example GitHub Actions workflow (requires Windows runner):
+Example GitHub Actions workflow:
 
 ```yaml
 jobs:

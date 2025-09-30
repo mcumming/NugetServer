@@ -1,37 +1,45 @@
-# Dockerfile for NuGet.Server on Windows Containers
-# This uses the official NuGet.Server package as specified in Microsoft documentation
+# Alternative Dockerfile using Mono to run NuGet.Server on Linux containers
+# This eliminates the need for Windows containers
 
-# Use the official ASP.NET image for Windows containers
-FROM mcr.microsoft.com/dotnet/framework/aspnet:4.8-windowsservercore-ltsc2022
+FROM mono:latest
+
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y \
+    ca-certificates \
+    wget \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install XSP (Mono's ASP.NET web server)
+RUN apt-get update && \
+    apt-get install -y mono-xsp4 && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set working directory
-WORKDIR /inetpub/wwwroot
+WORKDIR /app
 
 # Copy the application files
-# Note: The NugetServer application needs to be built on a Windows machine with Visual Studio
-# or MSBuild before building this Docker image
+# Note: The NugetServer application needs to be built before building this Docker image
 COPY NugetServer/bin/Release/ ./
 
 # Copy entrypoint script
-COPY NugetServer/docker-entrypoint.ps1 C:/docker-entrypoint.ps1
+COPY docker-entrypoint-mono.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 # Configure environment variables for NuGet.Server
-# These can be overridden at runtime
 ENV NUGET_API_KEY="" \
-    NUGET_PACKAGES_PATH="C:\\Packages" \
+    NUGET_PACKAGES_PATH="/var/nuget/packages" \
     NUGET_ALLOW_OVERWRITE_EXISTING_PACKAGE_ON_PUSH="false" \
-    NUGET_ENABLE_DELISTING="false"
+    NUGET_ENABLE_DELISTING="false" \
+    ASPNET_PORT="8080"
 
 # Create packages directory
-RUN powershell -Command New-Item -ItemType Directory -Path C:\Packages -Force
+RUN mkdir -p /var/nuget/packages && \
+    chmod 777 /var/nuget/packages
 
 # Expose HTTP port
-EXPOSE 80
-
-# Use ServiceMonitor to keep container running
-# Download and install ServiceMonitor
-ADD https://github.com/microsoft/IIS.ServiceMonitor/releases/download/2.0.1.10/ServiceMonitor.exe C:/ServiceMonitor.exe
+EXPOSE 8080
 
 # Set entrypoint
-ENTRYPOINT ["powershell", "-File", "C:\\docker-entrypoint.ps1"]
-
+ENTRYPOINT ["/docker-entrypoint.sh"]
