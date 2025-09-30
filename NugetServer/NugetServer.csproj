@@ -5,7 +5,24 @@
     <OutputType>Library</OutputType>
     <RootNamespace>NugetServer</RootNamespace>
     <AssemblyName>NugetServer</AssemblyName>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    
+    <!-- Assembly Information -->
+    <AssemblyTitle>NugetServer</AssemblyTitle>
+    <Product>NugetServer</Product>
+    <Description>NuGet Server</Description>
+    <Copyright>Copyright © 2025</Copyright>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <NeutralLanguage>en</NeutralLanguage>
+    
+    <!-- Generate assembly info from these properties -->
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <GenerateAssemblyTitleAttribute>true</GenerateAssemblyTitleAttribute>
+    <GenerateAssemblyDescriptionAttribute>true</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyProductAttribute>true</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyCopyrightAttribute>true</GenerateAssemblyCopyrightAttribute>
+    <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
+    <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
   </PropertyGroup>
 
   <ItemGroup>

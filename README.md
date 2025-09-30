@@ -20,13 +20,24 @@ Mono allows the .NET Framework application to run on Linux containers, providing
 ### Prerequisites
 
 - Docker (Linux, macOS, or Windows with WSL2)
-- MSBuild or Visual Studio (for building the application)
+- .NET SDK (for building the application)
 
-### Building and Running
+### Automated Build (Recommended)
+
+Use the provided build script to build the project and create a Docker image:
 
 ```bash
-# Build the ASP.NET application (on Windows or with Mono)
-cd NugetServer
+./build.sh
+```
+
+This script will:
+1. Restore NuGet packages
+2. Build the project in Release configuration
+3. Create a Docker image
+4. Save the image as a compressed artifact in the `artifacts/` directory
+
+### Manual Build
+
 ```bash
 # Build the ASP.NET application
 cd NugetServer
@@ -42,11 +53,36 @@ The NuGet server will be available at `http://localhost:8080/nuget`
 
 ## Building the Application
 
+### Option 1: Automated Build Script (Recommended)
+
+The easiest way to build everything is to use the provided `build.sh` script:
+
+```bash
+./build.sh
+```
+
+This script:
+- Checks prerequisites (dotnet and docker)
+- Restores NuGet packages
+- Builds the project in Release configuration
+- Verifies build output
+- Creates Docker image
+- Saves the image as a compressed artifact
+
+The build artifact will be saved in `artifacts/nuget-server_latest.tar.gz`
+
+To load the saved image later:
+```bash
+gunzip -c artifacts/nuget-server_latest.tar.gz | docker load
+```
+
+### Option 2: Manual Build
+
 The NuGet.Server application must be built before creating the Docker image.
 
-### Step 1: Build the ASP.NET Application
+#### Step 1: Build the ASP.NET Application
 
-The project now uses SDK-style format for easier builds:
+The project uses SDK-style format for easier builds:
 
 ```bash
 # Navigate to the NugetServer directory
@@ -61,7 +97,7 @@ dotnet build NugetServer.csproj -c Release
 
 Alternatively, you can use MSBuild directly or open `NugetServer.csproj` in Visual Studio and build in Release mode.
 
-### Step 2: Build the Docker Image
+#### Step 2: Build the Docker Image
 
 ```bash
 docker build -t nuget-server .

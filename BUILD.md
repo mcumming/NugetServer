@@ -8,17 +8,42 @@ This guide explains how to build and run the NuGet.Server Docker container using
 
 You need:
 - .NET SDK (for restoring and building)
-- OR MSBuild and .NET Framework 4.8 SDK
+- Docker (for creating container images)
 
 ### For Running the Container
 
 - Docker (Linux, macOS, or Windows with WSL2)
 
-## Build Steps
+## Quick Build (Recommended)
+
+The easiest way to build the entire solution is to use the automated build script:
+
+```bash
+./build.sh
+```
+
+This script will:
+1. Check prerequisites (dotnet and docker)
+2. Clean previous build artifacts
+3. Restore NuGet packages
+4. Build the project in Release configuration
+5. Verify build output
+6. Create Docker image
+7. Save the image as a compressed artifact in `artifacts/nuget-server_latest.tar.gz`
+
+To load the saved image later:
+
+```bash
+gunzip -c artifacts/nuget-server_latest.tar.gz | docker load
+```
+
+## Manual Build Steps
+
+If you prefer to build manually or need more control:
 
 ### Step 1: Restore NuGet Packages
 
-The project now uses SDK-style format with PackageReference, so you can use dotnet restore:
+The project uses SDK-style format with PackageReference:
 
 ```bash
 cd NugetServer
@@ -31,7 +56,7 @@ This will download:
 
 ### Step 2: Build the Application
 
-#### Option A: Using dotnet CLI
+#### Option A: Using dotnet CLI (Recommended)
 
 ```bash
 dotnet build NugetServer.csproj -c Release
