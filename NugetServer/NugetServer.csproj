@@ -4,6 +4,7 @@
     <TargetFramework>net48</TargetFramework>
     <RootNamespace>NugetServer</RootNamespace>
     <AssemblyName>NugetServer</AssemblyName>
+    <OutputType>Library</OutputType>
     
     <!-- Assembly Information -->
     <AssemblyTitle>NugetServer</AssemblyTitle>
