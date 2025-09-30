@@ -7,9 +7,8 @@ This guide explains how to build and run the NuGet.Server Docker container using
 ### For Building the Application
 
 You need:
-- Visual Studio 2019 or later with ASP.NET and web development workload (Windows)
+- .NET SDK (for restoring and building)
 - OR MSBuild and .NET Framework 4.8 SDK
-- NuGet CLI tools
 
 ### For Running the Container
 
@@ -17,63 +16,60 @@ You need:
 
 ## Build Steps
 
-### Step 1: Install NuGet CLI (if not already installed)
+### Step 1: Restore NuGet Packages
 
-```bash
-# Download NuGet.exe
-wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
-# Or on Windows PowerShell:
-# Invoke-WebRequest -Uri https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile nuget.exe
-```
-
-### Step 2: Restore NuGet Packages
+The project now uses SDK-style format with PackageReference, so you can use dotnet restore:
 
 ```bash
 cd NugetServer
-nuget restore packages.config -PackagesDirectory ../packages
+dotnet restore
 ```
 
 This will download:
 - NuGet.Server 3.5.3
 - Dependencies (NuGet.Core, RouteMagic, WebActivatorEx, etc.)
 
-### Step 3: Build the Application
+### Step 2: Build the Application
 
-#### Option A: Using MSBuild (Command Line)
+#### Option A: Using dotnet CLI
+
+```bash
+dotnet build NugetServer.csproj -c Release
+```
+
+#### Option B: Using MSBuild (Command Line)
 
 ```bash
 # On Windows, locate MSBuild (adjust path for your Visual Studio version)
-msbuild NugetServer.csproj /p:Configuration=Release /p:Platform=AnyCPU
-```
+msbuild NugetServer.csproj /p:Configuration=Release
 ```
 
-#### Option B: Using Visual Studio
+#### Option C: Using Visual Studio
 
 1. Open `NugetServer.csproj` in Visual Studio
 2. Select "Release" configuration
 3. Build > Build Solution (or press Ctrl+Shift+B)
 
-### Step 4: Verify Build Output
+### Step 3: Verify Build Output
 
 Check that the build output exists:
 
 ```bash
 ls NugetServer/bin/Release
 ```
-
 You should see:
 - NugetServer.dll
 - Web.config
 - All NuGet.Server dependencies
 
-### Step 5: Build Docker Image
+### Step 4: Build Docker Image
 
 ```bash
 cd ..  # Back to repository root
 docker build -t nuget-server .
 ```
 
-### Step 6: Run the Container
+### Step 5: Run the Container
 
 ```bash
 docker run -d -p 8080:8080 \
@@ -83,7 +79,7 @@ docker run -d -p 8080:8080 \
   nuget-server
 ```
 
-### Step 7: Verify It's Working
+### Step 6: Verify It's Working
 
 ```bash
 # Test the endpoint
@@ -113,20 +109,12 @@ Get-ChildItem "C:\Program Files\Microsoft Visual Studio\" -Recurse -Filter "MSBu
 
 ### NuGet Restore Fails
 
-```powershell
-# Clear NuGet cache
-nuget.exe locals all -clear
-
-```
-
-### NuGet Restore Fails
-
 ```bash
 # Clear NuGet cache
-nuget locals all -clear
+dotnet nuget locals all --clear
 
 # Try restore again
-nuget restore packages.config -PackagesDirectory ../packages
+dotnet restore
 ```
 
 ### Build Errors
@@ -151,12 +139,14 @@ Create `build.sh`:
 # Build script for NuGet.Server Docker container
 
 echo "Step 1: Restoring NuGet packages..."
-nuget restore NugetServer/packages.config -PackagesDirectory packages
+cd NugetServer
+dotnet restore
 
 echo "Step 2: Building application..."
-msbuild NugetServer/NugetServer.csproj /p:Configuration=Release /p:Platform=AnyCPU
+dotnet build NugetServer.csproj -c Release
 
 echo "Step 3: Building Docker image..."
+cd ..
 docker build -t nuget-server .
 
 echo "Build complete!"
@@ -173,9 +163,8 @@ chmod +x build.sh
 ## Continuous Integration
 
 For CI/CD pipelines, you'll need:
-- Build agents with MSBuild and .NET Framework SDK
+- .NET SDK or MSBuild and .NET Framework SDK
 - Docker support
-- NuGet CLI tools
 
 Example GitHub Actions workflow:
 
@@ -185,12 +174,14 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v1
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: '6.0.x'
       - name: Restore NuGet packages
-        run: nuget restore NugetServer/packages.config -PackagesDirectory packages
+        run: dotnet restore NugetServer/NugetServer.csproj
       - name: Build
-        run: msbuild NugetServer/NugetServer.csproj /p:Configuration=Release
+        run: dotnet build NugetServer/NugetServer.csproj -c Release
       - name: Build Docker image
         run: docker build -t nuget-server .
 ```

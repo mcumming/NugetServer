@@ -27,8 +27,11 @@ Mono allows the .NET Framework application to run on Linux containers, providing
 ```bash
 # Build the ASP.NET application (on Windows or with Mono)
 cd NugetServer
-nuget restore
-msbuild NugetServer.csproj /p:Configuration=Release
+```bash
+# Build the ASP.NET application
+cd NugetServer
+dotnet restore
+dotnet build NugetServer.csproj -c Release
 
 # Build and run with Docker Compose
 cd ..
@@ -43,20 +46,20 @@ The NuGet.Server application must be built before creating the Docker image.
 
 ### Step 1: Build the ASP.NET Application
 
-On a Windows machine with Visual Studio installed:
+The project now uses SDK-style format for easier builds:
 
 ```bash
 # Navigate to the NugetServer directory
 cd NugetServer
 
 # Restore NuGet packages
-nuget restore
+dotnet restore
 
 # Build the application
-msbuild NugetServer.csproj /p:Configuration=Release
+dotnet build NugetServer.csproj -c Release
 ```
 
-Alternatively, open `NugetServer.sln` in Visual Studio and build in Release mode.
+Alternatively, you can use MSBuild directly or open `NugetServer.csproj` in Visual Studio and build in Release mode.
 
 ### Step 2: Build the Docker Image
 
@@ -175,9 +178,8 @@ dotnet add package MyPackage --source MyNuGetServer
 ├── docker-compose.yml                  # Docker Compose configuration
 ├── docker-entrypoint.sh                # Container entrypoint script
 ├── NugetServer/                        # ASP.NET NuGet.Server application
-│   ├── NugetServer.csproj             # Project file
+│   ├── NugetServer.csproj             # SDK-style project file with PackageReference
 │   ├── Web.config                     # NuGet.Server configuration
-│   ├── packages.config                # NuGet package dependencies
 │   └── Properties/
 │       └── AssemblyInfo.cs            # Assembly information
 └── README.md                          # This file
