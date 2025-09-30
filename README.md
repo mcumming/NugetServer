@@ -6,6 +6,16 @@ A lightweight, configurable Docker container for hosting a NuGet server based on
 
 ### Using Docker Compose (Recommended)
 
+#### Automated Quick Start
+
+```bash
+./quick-start.sh
+```
+
+The quick-start script will guide you through the setup and start the server automatically.
+
+#### Manual Start
+
 ```bash
 docker-compose up -d
 ```
