@@ -1,191 +1,210 @@
 # NuGet.Server.Docker
 
-A lightweight, configurable Docker container for hosting a NuGet server based on [BaGet](https://github.com/loic-sharma/BaGet).
+A Docker container for the official NuGet.Server package following [Microsoft's NuGet.Server documentation](https://learn.microsoft.com/en-us/nuget/hosting-packages/nuget-server).
 
-## Quick Start
+## Overview
 
-### Using Docker Compose (Recommended)
+This project provides a Docker containerized version of the official **NuGet.Server** ASP.NET application. NuGet.Server is a .NET Framework-based package that creates a NuGet package feed from a simple ASP.NET web application.
 
-#### Automated Quick Start
+## Important Notes
 
-```bash
-./quick-start.sh
+### Windows Containers Required
+
+Since NuGet.Server is built on .NET Framework 4.8, this Docker container **requires Windows containers**. You cannot run this on Linux containers.
+
+### Prerequisites
+
+- Docker Desktop with Windows containers enabled
+- Windows Server 2022 or Windows 11 (for building)
+- Visual Studio 2019 or later with ASP.NET workload (for building the application)
+- .NET Framework 4.8 SDK
+
+## Building the Application
+
+The NuGet.Server application must be built on a Windows machine before creating the Docker image.
+
+### Step 1: Build the ASP.NET Application
+
+On a Windows machine with Visual Studio installed:
+
+```powershell
+# Navigate to the NugetServer directory
+cd NugetServer
+
+# Restore NuGet packages
+nuget restore
+
+# Build the application
+msbuild NugetServer.csproj /p:Configuration=Release
 ```
 
-The quick-start script will guide you through the setup and start the server automatically.
+Alternatively, open `NugetServer.sln` in Visual Studio and build in Release mode.
 
-#### Manual Start
+### Step 2: Build the Docker Image
 
-```bash
-docker-compose up -d
-```
+After building the application:
 
-The NuGet server will be available at `http://localhost:5000`
-
-### Using Docker Run
-
-```bash
+```powershell
+# Build the Docker image
 docker build -t nuget-server .
-docker run -d -p 5000:5000 -v nuget-data:/var/baget --name nuget-server nuget-server
+```
+
+## Running the Container
+
+### Basic Usage
+
+```powershell
+docker run -d -p 8080:80 --name nuget-server nuget-server
+```
+
+The NuGet server will be available at `http://localhost:8080`
+
+### With API Key Authentication
+
+```powershell
+docker run -d -p 8080:80 `
+  -e NUGET_API_KEY=your-secret-api-key `
+  --name nuget-server `
+  nuget-server
+```
+
+### With Persistent Storage
+
+```powershell
+docker run -d -p 8080:80 `
+  -v nuget-packages:C:\Packages `
+  -e NUGET_API_KEY=your-secret-api-key `
+  --name nuget-server `
+  nuget-server
 ```
 
 ## Configuration
 
-The container can be configured using environment variables. Below are the available options:
+The container can be configured using environment variables:
 
-### API Key Configuration
-
-Set an API key to secure package publishing:
-
-```yaml
-environment:
-  - ApiKey=YOUR_SECRET_API_KEY
-```
-
-Leave empty or omit for no authentication (development only).
-
-### Storage Configuration
-
-Configure where packages are stored:
-
-```yaml
-environment:
-  - Storage__Type=FileSystem  # or AzureBlobStorage, AwsS3, GoogleCloud, etc.
-  - Storage__Path=/var/baget/packages
-```
-
-### Database Configuration
-
-Configure the database backend:
-
-```yaml
-environment:
-  - Database__Type=Sqlite  # or SqlServer, MySql, PostgreSql
-  - Database__ConnectionString=Data Source=/var/baget/baget.db
-```
-
-### Mirror Configuration (Read-Through Caching)
-
-Enable mirroring from nuget.org or another NuGet source:
-
-```yaml
-environment:
-  - Mirror__Enabled=true
-  - Mirror__PackageSource=https://api.nuget.org/v3/index.json
-```
-
-### Package Deletion Behavior
-
-Configure how package deletions are handled:
-
-```yaml
-environment:
-  - PackageDeletionBehavior=Unlist  # or HardDelete
-```
-
-- `Unlist`: Packages are hidden but not deleted (recommended)
-- `HardDelete`: Packages are permanently deleted
-
-### Logging Configuration
-
-Set the logging level:
-
-```yaml
-environment:
-  - LOG_LEVEL=Information  # or Debug, Warning, Error
-```
+| Environment Variable | Description | Default |
+|---------------------|-------------|---------|
+| `NUGET_API_KEY` | API key for pushing packages. Leave empty to disable authentication | (empty) |
+| `NUGET_PACKAGES_PATH` | Path where packages are stored | `C:\Packages` |
+| `NUGET_ALLOW_OVERWRITE_EXISTING_PACKAGE_ON_PUSH` | Allow overwriting existing packages | `false` |
+| `NUGET_ENABLE_DELISTING` | Enable delisting instead of deletion | `false` |
 
 ## Using the NuGet Server
 
-### Publishing Packages
-
-```bash
-dotnet nuget push -s http://localhost:5000/v3/index.json -k YOUR_API_KEY package.nupkg
-```
-
 ### Adding as a Package Source
 
-```bash
-dotnet nuget add source http://localhost:5000/v3/index.json -n MyNuGetServer
+```powershell
+dotnet nuget add source http://localhost:8080/nuget -n MyNuGetServer
 ```
 
-Or add to your `nuget.config`:
+### Publishing Packages
 
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<configuration>
-  <packageSources>
-    <add key="MyNuGetServer" value="http://localhost:5000/v3/index.json" />
-  </packageSources>
-</configuration>
+```powershell
+# With API key
+dotnet nuget push MyPackage.1.0.0.nupkg -s http://localhost:8080/nuget -k your-secret-api-key
+
+# Without API key (if authentication is disabled)
+dotnet nuget push MyPackage.1.0.0.nupkg -s http://localhost:8080/nuget
 ```
 
-### Restoring Packages
+### Installing Packages
 
-```bash
-dotnet restore --source http://localhost:5000/v3/index.json
+```powershell
+dotnet add package MyPackage --source MyNuGetServer
 ```
 
-## Volumes
+## Docker Compose (Alternative)
 
-The container uses a volume at `/var/baget` to persist:
-- NuGet packages (in `/var/baget/packages`)
-- SQLite database (at `/var/baget/baget.db`)
-
-Make sure to mount this volume to preserve your data:
-
-```bash
-docker run -v nuget-data:/var/baget ...
-```
-
-## Health Check
-
-The container includes a health check endpoint at `/health`. Docker will monitor this endpoint to ensure the service is running properly.
-
-## Advanced Configuration
-
-For more advanced configuration options, refer to the [BaGet documentation](https://loic-sharma.github.io/BaGet/).
-
-### Example: Using with Azure Blob Storage
+Create a `docker-compose.yml` file:
 
 ```yaml
-environment:
-  - Storage__Type=AzureBlobStorage
-  - Storage__AccountName=myaccount
-  - Storage__AccessKey=myaccesskey
-  - Storage__Container=packages
+version: '3.8'
+
+services:
+  nuget-server:
+    build: .
+    image: nuget-server:latest
+    ports:
+      - "8080:80"
+    environment:
+      - NUGET_API_KEY=your-secret-api-key
+      - NUGET_PACKAGES_PATH=C:\Packages
+      - NUGET_ALLOW_OVERWRITE_EXISTING_PACKAGE_ON_PUSH=false
+    volumes:
+      - nuget-data:C:\Packages
+
+volumes:
+  nuget-data:
 ```
 
-### Example: Using with PostgreSQL
+Run with:
 
-```yaml
-environment:
-  - Database__Type=PostgreSql
-  - Database__ConnectionString=Host=db;Database=baget;Username=user;Password=pass
+```powershell
+docker-compose up -d
 ```
 
-## Production Deployment
+## Project Structure
 
-For production use, consider:
+```
+├── Dockerfile                          # Windows container Dockerfile
+├── NugetServer/                        # ASP.NET NuGet.Server application
+│   ├── NugetServer.csproj             # Project file
+│   ├── Web.config                     # NuGet.Server configuration
+│   ├── packages.config                # NuGet package dependencies
+│   ├── docker-entrypoint.ps1          # Container entrypoint script
+│   └── Properties/
+│       └── AssemblyInfo.cs            # Assembly information
+└── README.md                          # This file
+```
 
-1. **Set a strong API key** for package publishing
-2. **Use a reverse proxy** (nginx, traefik) for HTTPS
-3. **Use external storage** (Azure Blob, S3, etc.) for better scalability
-4. **Use a production database** (PostgreSQL, SQL Server) instead of SQLite
-5. **Enable monitoring and logging**
+## Features
 
-## Security Notes
+Based on the official NuGet.Server package (version 3.5.3), this container provides:
 
-- **Important**: The Dockerfile includes an ApiKey environment variable for configuration purposes. Never hardcode sensitive API keys in the Dockerfile. Always set them via environment variables at runtime or use Docker secrets.
-- Always set a strong API key in production environments
-- Use HTTPS in production (via reverse proxy)
-- Regularly backup the `/var/baget` volume
-- Keep the Docker image updated
+- ✅ NuGet v2 and v3 API support
+- ✅ Package push/delete operations
+- ✅ API key authentication
+- ✅ Package overwrite control
+- ✅ Package delisting support
+- ✅ Configurable package storage
+- ✅ File system monitoring for automatic package discovery
+
+## Troubleshooting
+
+### Container won't start
+
+Ensure you're using Windows containers:
+
+```powershell
+docker info | Select-String "OS/Arch"
+```
+
+Should show `windows/amd64`. If not, switch to Windows containers in Docker Desktop.
+
+### Cannot push packages
+
+1. Verify the API key is set correctly
+2. Check that the packages directory has write permissions
+3. Ensure the package doesn't already exist (unless overwrite is enabled)
+
+### Packages not appearing
+
+Wait 15 seconds for the initial cache rebuild, or check the `enableFileSystemMonitoring` setting in Web.config.
+
+## Security Considerations
+
+- Always set a strong API key in production
+- Use HTTPS in production (configure a reverse proxy)
+- Regularly backup the packages volume
+- Keep the Windows container base image updated
+
+## Related Links
+
+- [Official NuGet.Server Documentation](https://learn.microsoft.com/en-us/nuget/hosting-packages/nuget-server)
+- [NuGet.Server Package on NuGet.org](https://www.nuget.org/packages/NuGet.Server/)
+- [Windows Containers Documentation](https://docs.microsoft.com/en-us/virtualization/windowscontainers/)
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is provided as-is under the MIT License. See LICENSE file for details.
 
-## Acknowledgments
-
-This container is based on [BaGet](https://github.com/loic-sharma/BaGet), an excellent open-source NuGet server implementation.

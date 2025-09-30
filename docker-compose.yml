@@ -1,44 +1,29 @@
 services:
   nuget-server:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: nuget-server:latest
     container_name: nuget-server
     ports:
-      - "5000:5000"
+      - "8080:80"
     environment:
       # API Key for package publishing (leave empty for no authentication)
-      - ApiKey=${NUGET_API_KEY:-}
+      - NUGET_API_KEY=${NUGET_API_KEY:-}
       
-      # Storage configuration
-      - Storage__Type=FileSystem
-      - Storage__Path=/var/baget/packages
+      # Path where packages are stored inside the container
+      - NUGET_PACKAGES_PATH=C:\Packages
       
-      # Database configuration
-      - Database__Type=Sqlite
-      - Database__ConnectionString=Data Source=/var/baget/baget.db
+      # Allow overwriting existing packages (true/false)
+      - NUGET_ALLOW_OVERWRITE_EXISTING_PACKAGE_ON_PUSH=false
       
-      # Search configuration
-      - Search__Type=Database
-      
-      # Package deletion behavior: HardDelete, Unlist
-      - PackageDeletionBehavior=Unlist
-      
-      # Mirror configuration (optional - enables read-through caching from nuget.org)
-      - Mirror__Enabled=false
-      - Mirror__PackageSource=https://api.nuget.org/v3/index.json
-      
-      # Logging level
-      - LOG_LEVEL=Information
+      # Enable delisting instead of deletion (true/false)
+      - NUGET_ENABLE_DELISTING=false
     volumes:
-      - nuget-data:/var/baget
+      # Persist packages across container restarts
+      - nuget-packages:C:\Packages
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/v3/index.json"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
 volumes:
-  nuget-data:
+  nuget-packages:
     driver: local

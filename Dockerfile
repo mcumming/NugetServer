@@ -1,31 +1,37 @@
-FROM loicsharma/baget:latest
-LABEL maintainer="Michael Cummings (MSFT)"
-LABEL org.opencontainers.image.source="https://github.com/mcumming/Nuget.Server.Docker"
-LABEL org.opencontainers.image.description="A lightweight NuGet server based on BaGet"
+# Dockerfile for NuGet.Server on Windows Containers
+# This uses the official NuGet.Server package as specified in Microsoft documentation
 
-# Environment variables for configuration
-ENV ASPNETCORE_URLS=http://+:5000
-ENV Storage__Type=FileSystem
-ENV Storage__Path=/var/baget/packages
-ENV Database__Type=Sqlite
-ENV Database__ConnectionString="Data Source=/var/baget/baget.db"
-ENV Search__Type=Database
-ENV ApiKey=""
-ENV PackageDeletionBehavior=Unlist
-ENV Mirror__Enabled=false
-ENV Mirror__PackageSource=https://api.nuget.org/v3/index.json
-ENV LOG_LEVEL=Information
+# Use the official ASP.NET image for Windows containers
+FROM mcr.microsoft.com/dotnet/framework/aspnet:4.8-windowsservercore-ltsc2022
 
-# Copy custom entrypoint script
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+# Set working directory
+WORKDIR /inetpub/wwwroot
 
-# Create directories for packages and database
-RUN mkdir -p /var/baget/packages && \
-    chmod -R 777 /var/baget
+# Copy the application files
+# Note: The NugetServer application needs to be built on a Windows machine with Visual Studio
+# or MSBuild before building this Docker image
+COPY NugetServer/bin/Release/ ./
 
-VOLUME ["/var/baget"]
+# Copy entrypoint script
+COPY NugetServer/docker-entrypoint.ps1 C:/docker-entrypoint.ps1
 
-EXPOSE 5000
+# Configure environment variables for NuGet.Server
+# These can be overridden at runtime
+ENV NUGET_API_KEY="" \
+    NUGET_PACKAGES_PATH="C:\\Packages" \
+    NUGET_ALLOW_OVERWRITE_EXISTING_PACKAGE_ON_PUSH="false" \
+    NUGET_ENABLE_DELISTING="false"
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
+# Create packages directory
+RUN powershell -Command New-Item -ItemType Directory -Path C:\Packages -Force
+
+# Expose HTTP port
+EXPOSE 80
+
+# Use ServiceMonitor to keep container running
+# Download and install ServiceMonitor
+ADD https://github.com/microsoft/IIS.ServiceMonitor/releases/download/2.0.1.10/ServiceMonitor.exe C:/ServiceMonitor.exe
+
+# Set entrypoint
+ENTRYPOINT ["powershell", "-File", "C:\\docker-entrypoint.ps1"]
+
