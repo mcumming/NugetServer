@@ -1,25 +1,4 @@
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
-WORKDIR /app
-EXPOSE 5000
-
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-ARG BAGET_VERSION=1.8.1
-WORKDIR /src
-
-# Download BaGet source
-RUN apt-get update && apt-get install -y git && \
-    git clone --branch v${BAGET_VERSION} --depth 1 https://github.com/loic-sharma/BaGet.git && \
-    cd BaGet && \
-    dotnet restore src/BaGet/BaGet.csproj
-
-# Build BaGet
-WORKDIR /src/BaGet
-RUN dotnet build src/BaGet/BaGet.csproj -c Release -o /app/build
-
-FROM build AS publish
-RUN dotnet publish src/BaGet/BaGet.csproj -c Release -o /app/publish
-
-FROM base AS final
+FROM loicsharma/baget:latest
 LABEL maintainer="Michael Cummings (MSFT)"
 LABEL org.opencontainers.image.source="https://github.com/mcumming/Nuget.Server.Docker"
 LABEL org.opencontainers.image.description="A lightweight NuGet server based on BaGet"
@@ -33,9 +12,11 @@ ENV Database__ConnectionString="Data Source=/var/baget/baget.db"
 ENV Search__Type=Database
 ENV ApiKey=""
 ENV PackageDeletionBehavior=Unlist
+ENV Mirror__Enabled=false
+ENV Mirror__PackageSource=https://api.nuget.org/v3/index.json
+ENV LOG_LEVEL=Information
 
-WORKDIR /app
-COPY --from=publish /app/publish .
+# Copy custom entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
@@ -44,5 +25,7 @@ RUN mkdir -p /var/baget/packages && \
     chmod -R 777 /var/baget
 
 VOLUME ["/var/baget"]
+
+EXPOSE 5000
 
 ENTRYPOINT ["/docker-entrypoint.sh"]

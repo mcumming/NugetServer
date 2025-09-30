@@ -166,7 +166,8 @@ For production use, consider:
 
 ## Security Notes
 
-- Always set an API key in production environments
+- **Important**: The Dockerfile includes an ApiKey environment variable for configuration purposes. Never hardcode sensitive API keys in the Dockerfile. Always set them via environment variables at runtime or use Docker secrets.
+- Always set a strong API key in production environments
 - Use HTTPS in production (via reverse proxy)
 - Regularly backup the `/var/baget` volume
 - Keep the Docker image updated
