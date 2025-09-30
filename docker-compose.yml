@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  nuget-server:
+    build: .
+    image: nuget-server:latest
+    container_name: nuget-server
+    ports:
+      - "5000:5000"
+    environment:
+      # API Key for package publishing (leave empty for no authentication)
+      - ApiKey=${NUGET_API_KEY:-}
+      
+      # Storage configuration
+      - Storage__Type=FileSystem
+      - Storage__Path=/var/baget/packages
+      
+      # Database configuration
+      - Database__Type=Sqlite
+      - Database__ConnectionString=Data Source=/var/baget/baget.db
+      
+      # Search configuration
+      - Search__Type=Database
+      
+      # Package deletion behavior: HardDelete, Unlist
+      - PackageDeletionBehavior=Unlist
+      
+      # Mirror configuration (optional - enables read-through caching from nuget.org)
+      - Mirror__Enabled=false
+      - Mirror__PackageSource=https://api.nuget.org/v3/index.json
+      
+      # Logging level
+      - LOG_LEVEL=Information
+    volumes:
+      - nuget-data:/var/baget
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  nuget-data:
+    driver: local
