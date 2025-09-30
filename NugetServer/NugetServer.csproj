@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
-    <OutputType>Library</OutputType>
     <RootNamespace>NugetServer</RootNamespace>
     <AssemblyName>NugetServer</AssemblyName>
     
