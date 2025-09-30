@@ -24,7 +24,7 @@ WORKDIR /app
 COPY NugetServer/bin/Release/ ./
 
 # Copy entrypoint script
-COPY docker-entrypoint-mono.sh /docker-entrypoint.sh
+COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
 # Configure environment variables for NuGet.Server
