@@ -255,7 +255,7 @@ dotnet add package MyPackage --source MyNuGetServer
 
 ## Features
 
-Based on the official NuGet.Server package (version 3.5.3), this container provides:
+Based on the official NuGet.Server package (version 3.4.2), this container provides:
 
 - ✅ NuGet v2 and v3 API support
 - ✅ Package push/delete operations

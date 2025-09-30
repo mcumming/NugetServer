@@ -83,7 +83,7 @@ dotnet restore
 ```
 
 This will download:
-- NuGet.Server 3.5.3
+- NuGet.Server 3.4.2
 - Dependencies (NuGet.Core, RouteMagic, WebActivatorEx, etc.)
 
 ### Step 2: Build the Application
