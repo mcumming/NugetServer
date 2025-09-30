@@ -34,8 +34,4 @@
     <PackageReference Include="WebActivatorEx" Version="2.2.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="Web.config" />
-  </ItemGroup>
-
 </Project>
