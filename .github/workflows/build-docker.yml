@@ -1,0 +1,71 @@
+name: Build NuGet Gallery Docker Image
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker
+      run: |
+        # Ensure Docker is running in Windows container mode
+        docker version
+    
+    - name: Build Docker image
+      run: |
+        docker build -t nugetgallery:${{ github.sha }} .
+        docker tag nugetgallery:${{ github.sha }} nugetgallery:latest
+    
+    - name: Test Docker image
+      run: |
+        # Start the container
+        docker run -d --name test-nugetgallery -p 8080:80 nugetgallery:latest
+        
+        # Wait for container to be healthy (up to 2 minutes)
+        $timeout = 120
+        $elapsed = 0
+        $interval = 5
+        
+        while ($elapsed -lt $timeout) {
+          $health = docker inspect --format='{{.State.Health.Status}}' test-nugetgallery 2>$null
+          if ($health -eq 'healthy') {
+            Write-Host "Container is healthy!"
+            break
+          }
+          Write-Host "Waiting for container to be healthy... ($elapsed/$timeout seconds)"
+          Start-Sleep -Seconds $interval
+          $elapsed += $interval
+        }
+        
+        # Check if we timed out
+        if ($elapsed -ge $timeout) {
+          Write-Host "Container did not become healthy within timeout period"
+          docker logs test-nugetgallery
+          exit 1
+        }
+        
+        # Clean up
+        docker stop test-nugetgallery
+        docker rm test-nugetgallery
+    
+    - name: Save Docker image (optional)
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        docker save nugetgallery:latest -o nugetgallery-image.tar
+    
+    - name: Upload image artifact (optional)
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: actions/upload-artifact@v4
+      with:
+        name: nugetgallery-docker-image
+        path: nugetgallery-image.tar
+        retention-days: 7
