@@ -1,7 +1,7 @@
 # Alternative Dockerfile using Mono to run NuGet.Server on Linux containers
 # This eliminates the need for Windows containers
 
-FROM mono:6.12
+FROM mono:latest
 
 # Install dependencies and XSP (Mono's ASP.NET web server) in a single layer
 RUN apt-get update && \
