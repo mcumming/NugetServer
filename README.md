@@ -17,6 +17,49 @@ A lightweight, containerized NuGet v3 protocol server built with .NET 9, designe
 
 ## Quick Start
 
+### Building the Image
+
+Due to SSL certificate handling in some environments, we provide two Dockerfile options:
+
+#### Option 1: Using the build script (Recommended)
+
+```bash
+# Make the script executable (if not already)
+chmod +x build.sh
+
+# Run the build script
+./build.sh
+```
+
+This script will:
+1. Build and publish the application locally
+2. Create a Docker image using the prebuilt binaries
+3. Tag the image as `nuget-server:latest`
+
+#### Option 2: Manual build with Dockerfile.prebuilt
+
+```bash
+# Build and publish the application
+cd src/NuGetServer
+dotnet publish -c Release -o bin/Release/net9.0/publish
+cd ../..
+
+# Build Docker image
+docker build -f Dockerfile.prebuilt -t nuget-server .
+```
+
+#### Option 3: Standard multi-stage Dockerfile
+
+If your environment has proper SSL certificates configured:
+
+```bash
+docker build -t nuget-server .
+```
+
+**Note:** This may fail in some CI/CD environments due to SSL certificate validation issues with NuGet package restore.
+
+### Running the Container
+
 ### Using Docker Compose
 
 ```bash
@@ -222,11 +265,26 @@ Packages are stored in the `/packages` directory within the container. Mount a v
 -v /host/path/to/packages:/packages
 ```
 
-Or use a named volume:
+Or use a named volume (recommended):
 
 ```bash
 -v nuget-packages:/packages
 ```
+
+### Volume Permissions
+
+The container runs as the non-root `nuget` user (UID typically 999 or 1000 depending on the base image). When using bind mounts, ensure the host directory has appropriate permissions:
+
+```bash
+# Create directory with appropriate permissions
+mkdir -p /path/to/packages
+sudo chown 999:999 /path/to/packages
+
+# Or use chmod if you don't know the exact UID
+chmod 777 /path/to/packages  # Less secure but simpler
+```
+
+Using named Docker volumes avoids these permission issues as Docker handles the permissions automatically.
 
 ## Troubleshooting
 

@@ -2,9 +2,11 @@ version: '3.8'
 
 services:
   nuget-server:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: nuget-server:latest
+    # Uncomment to build from source
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.prebuilt
     ports:
       - "5000:8080"
     environment:

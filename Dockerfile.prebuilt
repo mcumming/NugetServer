@@ -1,20 +1,7 @@
-# Multi-stage Dockerfile for NuGet Server
-# Stage 1: Build
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-WORKDIR /src
+# Dockerfile for pre-built NuGet Server
+# Use this if you encounter SSL certificate issues during Docker build
+# Build the application first with: dotnet publish -c Release -o publish
 
-# Copy everything including obj folder with restored packages
-COPY src/NuGetServer/ NuGetServer/
-WORKDIR "/src/NuGetServer"
-
-# Build (restore happens automatically if needed)
-RUN dotnet build "NuGetServer.csproj" -c Release -o /app/build
-
-# Stage 2: Publish
-FROM build AS publish
-RUN dotnet publish "NuGetServer.csproj" -c Release -o /app/publish /p:UseAppHost=false
-
-# Stage 3: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 
@@ -24,8 +11,8 @@ RUN groupadd -r nuget && useradd -r -g nuget nuget
 # Create packages directory
 RUN mkdir -p /packages && chown nuget:nuget /packages
 
-# Copy published application
-COPY --from=publish /app/publish .
+# Copy pre-built application
+COPY src/NuGetServer/bin/Release/net9.0/publish/ .
 
 # Switch to non-root user
 USER nuget
