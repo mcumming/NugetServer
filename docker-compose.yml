@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  nugetgallery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nugetgallery:latest
+    container_name: nugetgallery
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "powershell", "-Command", "try { (Invoke-WebRequest -Uri http://localhost -UseBasicParsing).StatusCode -eq 200 } catch { exit 1 }"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 60s
+    # Environment variables can be added here for configuration
+    # environment:
+    #   - NUGET_GALLERY_SETTING=value
+    # Volumes can be added for persistent data
+    # volumes:
+    #   - nuget-data:/app/data
+
+# volumes:
+#   nuget-data:

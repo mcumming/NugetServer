@@ -27,10 +27,26 @@ This implementation uses:
 
 ## Building the Container
 
-To build the Docker image:
+### Option 1: Using the build script (Recommended)
+
+```powershell
+.\build.ps1
+```
+
+Options:
+- `-Tag <tag>`: Specify a custom tag (default: `nugetgallery:latest`)
+- `-NoPull`: Skip pulling the latest base images
+
+### Option 2: Using Docker directly
 
 ```powershell
 docker build -t nugetgallery:latest .
+```
+
+### Option 3: Using Docker Compose
+
+```powershell
+docker-compose build
 ```
 
 The build process will:
@@ -44,10 +60,27 @@ The build process will:
 
 ## Running the Container
 
-To run the NuGet Gallery container:
+### Option 1: Using the run script (Recommended)
+
+```powershell
+.\run.ps1
+```
+
+Options:
+- `-Tag <tag>`: Specify image tag to run (default: `nugetgallery:latest`)
+- `-Port <port>`: Specify host port (default: `8080`)
+- `-Name <name>`: Specify container name (default: `nugetgallery`)
+
+### Option 2: Using Docker directly
 
 ```powershell
 docker run -d -p 8080:80 --name nugetgallery nugetgallery:latest
+```
+
+### Option 3: Using Docker Compose
+
+```powershell
+docker-compose up -d
 ```
 
 Access the gallery at: http://localhost:8080
@@ -70,24 +103,49 @@ For production deployment, you'll need to:
 
 ## Container Management
 
-### Stop the container
-```powershell
-docker stop nugetgallery
-```
+### Using the scripts
 
-### Start the container
-```powershell
-docker start nugetgallery
-```
-
-### View logs
+View logs:
 ```powershell
 docker logs nugetgallery
 ```
 
-### Remove the container
+Stop the container:
+```powershell
+docker stop nugetgallery
+```
+
+Start the container:
+```powershell
+docker start nugetgallery
+# Or use: .\run.ps1
+```
+
+Remove the container:
 ```powershell
 docker rm -f nugetgallery
+```
+
+### Using Docker Compose
+
+View logs:
+```powershell
+docker-compose logs -f
+```
+
+Stop services:
+```powershell
+docker-compose stop
+```
+
+Start services:
+```powershell
+docker-compose start
+```
+
+Stop and remove:
+```powershell
+docker-compose down
 ```
 
 ## Health Check
@@ -99,6 +157,15 @@ docker inspect --format='{{json .State.Health}}' nugetgallery
 ```
 
 ## Development
+
+### Repository Files
+
+- **Dockerfile**: Multi-stage build configuration
+- **docker-compose.yml**: Docker Compose orchestration file
+- **build.ps1**: PowerShell script to build the Docker image
+- **run.ps1**: PowerShell script to run the container with helpful defaults
+- **.dockerignore**: Files to exclude from the Docker build context
+- **.github/workflows/build-docker.yml**: GitHub Actions CI/CD pipeline
 
 To modify the build process:
 

@@ -27,8 +27,11 @@ WORKDIR /nugetgallery
 # Restore NuGet packages
 RUN nuget restore NuGetGallery.sln
 
-# Build the NuGetGallery project
-RUN msbuild src\NuGetGallery\NuGetGallery.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile /p:OutputPath=C:\publish /p:WebPublishMethod=FileSystem /p:publishUrl=C:\publish /p:DeployTarget=WebPublish /p:DeleteExistingFiles=False /t:Build,WebPublish
+# Build the solution to ensure all dependencies are built
+RUN msbuild NuGetGallery.sln /p:Configuration=Release /p:Platform="Any CPU" /m
+
+# Publish the NuGetGallery web project
+RUN msbuild src\NuGetGallery\NuGetGallery.csproj /p:Configuration=Release /p:Platform="Any CPU" /p:DeployOnBuild=true /p:WebPublishMethod=FileSystem /p:publishUrl=C:\publish /p:DeleteExistingFiles=False /t:WebPublish
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/framework/aspnet:4.8-windowsservercore-ltsc2022 AS runtime
