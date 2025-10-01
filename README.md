@@ -1,2 +1,264 @@
-# Nuget.Server.Docker
-A Docker container for the Nuget.Server
+# NuGet Server Docker
+
+A lightweight, containerized NuGet v3 protocol server built with .NET 9, designed to run as a container appliance for hosting private NuGet packages.
+
+## Features
+
+- ✅ Full NuGet v3 protocol implementation
+- ✅ Package publishing (push) and deletion
+- ✅ Package search and query
+- ✅ Package metadata and registration endpoints
+- ✅ Built with .NET 9 and modern C# features
+- ✅ Multi-stage Dockerfile for optimized image size
+- ✅ Comprehensive logging and health checks
+- ✅ Configurable via environment variables or configuration files
+- ✅ Non-root container user for security
+- ✅ File system-based package storage
+
+## Quick Start
+
+### Using Docker Compose
+
+```bash
+# Start the server
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the server
+docker-compose down
+```
+
+The server will be available at `http://localhost:5000`
+
+### Using Docker
+
+```bash
+# Build the image
+docker build -t nuget-server .
+
+# Run the container
+docker run -d \
+  -p 5000:8080 \
+  -v nuget-packages:/packages \
+  -e NuGetServer__ApiKey=your-api-key-here \
+  --name nuget-server \
+  nuget-server
+
+# View logs
+docker logs -f nuget-server
+```
+
+## Configuration
+
+The server can be configured using environment variables or by mounting a custom `appsettings.json` file.
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NuGetServer__PackagesPath` | Directory where packages are stored | `/packages` |
+| `NuGetServer__ApiKey` | API key required for push/delete operations (empty = no auth) | `""` |
+| `NuGetServer__AllowOverwrite` | Allow overwriting existing packages | `false` |
+| `NuGetServer__EnableDelisting` | Allow deleting packages | `true` |
+| `NuGetServer__MaxPackageSizeMB` | Maximum package size in MB | `250` |
+| `ASPNETCORE_URLS` | URLs the server listens on | `http://+:8080` |
+| `ASPNETCORE_ENVIRONMENT` | Environment (Development/Production) | `Production` |
+
+### Configuration File
+
+You can mount a custom `appsettings.Production.json` file:
+
+```json
+{
+  "NuGetServer": {
+    "PackagesPath": "/packages",
+    "ApiKey": "your-secure-api-key",
+    "AllowOverwrite": false,
+    "EnableDelisting": true,
+    "MaxPackageSizeMB": 250
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}
+```
+
+Mount it in Docker:
+
+```bash
+docker run -d \
+  -p 5000:8080 \
+  -v $(pwd)/appsettings.Production.json:/app/appsettings.Production.json:ro \
+  -v nuget-packages:/packages \
+  nuget-server
+```
+
+## Using with NuGet Client
+
+### Add the source
+
+```bash
+# Add the source
+dotnet nuget add source http://localhost:5000/v3/index.json \
+  --name LocalNuGet
+
+# With API key
+dotnet nuget add source http://localhost:5000/v3/index.json \
+  --name LocalNuGet \
+  --username any \
+  --password your-api-key-here \
+  --store-password-in-clear-text
+```
+
+### Push a package
+
+```bash
+dotnet nuget push MyPackage.1.0.0.nupkg \
+  --source LocalNuGet \
+  --api-key your-api-key-here
+```
+
+### Search for packages
+
+```bash
+dotnet package search MyPackage --source LocalNuGet
+```
+
+### Install a package
+
+```bash
+dotnet add package MyPackage --source LocalNuGet
+```
+
+### Delete a package
+
+```bash
+dotnet nuget delete MyPackage 1.0.0 \
+  --source LocalNuGet \
+  --api-key your-api-key-here
+```
+
+## API Endpoints
+
+The server implements the following NuGet v3 protocol endpoints:
+
+- `GET /v3/index.json` - Service index (entry point)
+- `PUT /v3/package` - Push a package
+- `DELETE /v3/package/{id}/{version}` - Delete a package
+- `GET /v3/package/{id}/{version}/content` - Download package
+- `GET /v3/registration/{id}/index.json` - Package registration index
+- `GET /v3/registration/{id}/{version}.json` - Package metadata
+- `GET /v3/search?q={query}` - Search packages
+- `GET /health` - Health check endpoint
+- `GET /` - Server information
+
+## Development
+
+### Prerequisites
+
+- .NET 9 SDK
+- Docker (optional)
+
+### Build and run locally
+
+```bash
+cd src/NuGetServer
+dotnet restore
+dotnet build
+dotnet run
+```
+
+The server will start on `http://localhost:5000` (or as configured in `launchSettings.json`).
+
+### Access Swagger UI
+
+When running in Development mode, Swagger UI is available at `http://localhost:5000/swagger`
+
+## Architecture
+
+This implementation follows modern .NET design principles:
+
+- **Minimal API**: Uses .NET 9 minimal APIs for efficient routing
+- **Dependency Injection**: Proper DI container usage for services
+- **Logging**: Structured logging with configurable log levels
+- **Health Checks**: Built-in health check support
+- **Configuration**: Flexible configuration using the Options pattern
+- **Security**: Runs as non-root user, supports API key authentication
+
+### Project Structure
+
+```
+src/NuGetServer/
+├── Configuration/          # Configuration classes
+│   └── NuGetServerOptions.cs
+├── Endpoints/             # API endpoint definitions
+│   └── NuGetEndpoints.cs
+├── Models/                # Data models
+│   ├── PackageMetadata.cs
+│   └── ServiceIndex.cs
+├── Services/              # Business logic
+│   └── PackageService.cs
+└── Program.cs            # Application entry point
+```
+
+## Security Considerations
+
+1. **API Key Protection**: Set a strong API key via environment variable
+2. **Network Security**: Use HTTPS in production (configure reverse proxy)
+3. **File Permissions**: The container runs as non-root user `nuget`
+4. **Package Validation**: Packages are validated using NuGet libraries
+5. **Size Limits**: Configurable maximum package size
+
+## Persistence
+
+Packages are stored in the `/packages` directory within the container. Mount a volume to persist packages across container restarts:
+
+```bash
+-v /host/path/to/packages:/packages
+```
+
+Or use a named volume:
+
+```bash
+-v nuget-packages:/packages
+```
+
+## Troubleshooting
+
+### Check server health
+
+```bash
+curl http://localhost:5000/health
+```
+
+### View logs
+
+```bash
+docker logs nuget-server
+```
+
+### Verify service index
+
+```bash
+curl http://localhost:5000/v3/index.json
+```
+
+### Check packages directory
+
+```bash
+docker exec nuget-server ls -la /packages
+```
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit issues or pull requests.
+
