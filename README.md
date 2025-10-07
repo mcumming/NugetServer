@@ -228,7 +228,7 @@ The project includes a GitHub Actions CI/CD pipeline that automatically builds, 
 
 ### Pipeline Features
 
-- **Automated Builds**: Triggers on push to `main` and `develop` branches
+- **Automated Builds**: Triggers on push to `main` branch
 - **Pull Request Validation**: Builds and tests PRs without publishing
 - **Container Registry**: Publishes images to GitHub Container Registry (GHCR)
 - **Multi-tag Strategy**: Creates tags for branches, versions, and commit SHAs
@@ -240,7 +240,6 @@ The pipeline creates multiple tags for published images:
 
 - `latest` - Latest build from the main branch
 - `main` - Latest build from the main branch
-- `develop` - Latest build from the develop branch
 - `v1.0.0` - Semantic version tags (for tagged releases)
 - `sha-abc1234` - Git commit SHA for traceability
 
@@ -261,8 +260,8 @@ docker run -d \
 
 The CI/CD pipeline can be triggered:
 
-1. **Automatically** - On push to main/develop branches
-2. **Pull Requests** - On PR creation/updates to main/develop
+1. **Automatically** - On push to main branch
+2. **Pull Requests** - On PR creation/updates to main
 3. **Version Tags** - On pushing tags matching `v*.*.*` pattern
 4. **Manually** - Via GitHub Actions UI (workflow_dispatch)
 
