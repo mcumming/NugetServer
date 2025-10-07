@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  nuget-server:
+    image: nuget-server:latest
+    # Uncomment to build from source
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.prebuilt
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - NuGetServer__PackagesPath=/packages
+      - NuGetServer__ApiKey=${NUGET_API_KEY:-}
+      - NuGetServer__AllowOverwrite=false
+      - NuGetServer__EnableDelisting=true
+      - NuGetServer__MaxPackageSizeMB=250
+    volumes:
+      - nuget-packages:/packages
+      # Optionally mount a custom configuration file
+      # - ./appsettings.Production.json:/app/appsettings.Production.json:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  nuget-packages:
+    driver: local
