@@ -222,6 +222,50 @@ The server will start on `http://localhost:5000` (or as configured in `launchSet
 
 When running in Development mode, Swagger UI is available at `http://localhost:5000/swagger`
 
+## CI/CD Pipeline
+
+The project includes a GitHub Actions CI/CD pipeline that automatically builds, tests, and publishes Docker images.
+
+### Pipeline Features
+
+- **Automated Builds**: Triggers on push to `main` and `develop` branches
+- **Pull Request Validation**: Builds and tests PRs without publishing
+- **Container Registry**: Publishes images to GitHub Container Registry (GHCR)
+- **Multi-tag Strategy**: Creates tags for branches, versions, and commit SHAs
+- **Build Artifacts**: Uploads build artifacts for inspection
+
+### Image Tags
+
+The pipeline creates multiple tags for published images:
+
+- `latest` - Latest build from the main branch
+- `main` - Latest build from the main branch
+- `develop` - Latest build from the develop branch
+- `v1.0.0` - Semantic version tags (for tagged releases)
+- `main-abc1234` - Branch name with commit SHA
+
+### Using Published Images
+
+```bash
+# Pull the latest image from GHCR
+docker pull ghcr.io/mcumming/nuget.server.docker:latest
+
+# Run the container
+docker run -d \
+  -p 5000:8080 \
+  -v nuget-packages:/packages \
+  ghcr.io/mcumming/nuget.server.docker:latest
+```
+
+### Triggering Workflows
+
+The CI/CD pipeline can be triggered:
+
+1. **Automatically** - On push to main/develop branches
+2. **Pull Requests** - On PR creation/updates to main/develop
+3. **Version Tags** - On pushing tags matching `v*.*.*` pattern
+4. **Manually** - Via GitHub Actions UI (workflow_dispatch)
+
 ## Architecture
 
 This implementation follows modern .NET design principles:
