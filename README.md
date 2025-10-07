@@ -242,7 +242,7 @@ The pipeline creates multiple tags for published images:
 - `main` - Latest build from the main branch
 - `develop` - Latest build from the develop branch
 - `v1.0.0` - Semantic version tags (for tagged releases)
-- `main-abc1234` - Branch name with commit SHA
+- `sha-abc1234` - Git commit SHA for traceability
 
 ### Using Published Images
 
