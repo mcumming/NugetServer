@@ -134,11 +134,6 @@ jobs:
           name: nuget-server-build
           path: ./publish
           retention-days: 7
-        uses: actions/upload-artifact@v4
-        with:
-          name: nuget-server-build
-          path: ./publish
-          retention-days: 7
 
   docker:
     name: Build and Push Docker Image
