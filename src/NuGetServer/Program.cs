@@ -86,3 +86,6 @@ app.Logger.LogInformation("NuGet Server starting on {Environment}", app.Environm
 app.Logger.LogInformation("Packages directory: {PackagesPath}", packagesPath);
 
 app.Run();
+
+// Make the Program class accessible for integration tests
+public partial class Program { }

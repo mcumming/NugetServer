@@ -200,17 +200,13 @@ public static class NuGetEndpoints
 
         var baseUrl = $"{context.Request.Scheme}://{context.Request.Host}{context.Request.PathBase}/v3";
 
-        var catalogEntry = new CatalogEntry(
-            metadata.Id,
-            metadata.Version,
-            metadata.Description,
-            metadata.Authors,
-            metadata.Tags,
-            metadata.Published,
+        var registrationLeaf = new RegistrationLeaf(
+            $"{baseUrl}/registration/{metadata.Id}/{metadata.Version}.json",
+            $"{baseUrl}/catalog/{metadata.Id}/{metadata.Version}.json",
             $"{baseUrl}/package/{metadata.Id}/{metadata.Version}/content"
         );
 
-        return Results.Json(catalogEntry, NuGetServerJsonContext.Default.RegistrationLeaf);
+        return Results.Json(registrationLeaf, NuGetServerJsonContext.Default.RegistrationLeaf);
     }
 
     private static async Task<IResult> SearchPackages(
