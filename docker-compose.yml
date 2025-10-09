@@ -1,12 +1,12 @@
-version: '3.8'
-
 services:
   nuget-server:
     image: nuget-server:latest
-    # Uncomment to build from source
+    # Uncomment to build from source using .NET SDK container build
     # build:
-    #   context: .
-    #   dockerfile: Dockerfile.prebuilt
+    #   context: src/NuGetServer
+    #   dockerfile: /dev/null  # Not needed - using SDK container build
+    #   target: app  # Not applicable for SDK build
+    # To build with AOT: cd src/NuGetServer && dotnet publish /t:PublishContainer -c Release
     ports:
       - "5000:8080"
     environment:
