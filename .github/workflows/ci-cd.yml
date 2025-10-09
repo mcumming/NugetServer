@@ -27,7 +27,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '8.0.x'
 
       - name: Restore dependencies
         run: dotnet restore src/NuGetServer/NuGetServer.csproj
@@ -67,8 +67,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -77,7 +79,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata for Docker
+      - name: Extract metadata for container tags
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -91,23 +93,44 @@ jobs:
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push Docker image
-        id: build-and-push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64
+      - name: Set container registry and image name
+        run: |
+          echo "CONTAINER_REGISTRY=${{ env.REGISTRY }}" >> $GITHUB_ENV
+          echo "CONTAINER_IMAGE_NAME=${{ env.IMAGE_NAME }}" >> $GITHUB_ENV
 
-      - name: Generate artifact attestation
+      - name: Build and push container using .NET SDK
+        run: |
+          cd src/NuGetServer
+          
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            # For PRs, just build without pushing
+            dotnet publish /t:PublishContainer \
+              -p ContainerImageTag=pr-${{ github.event.number }}
+          else
+            # For main branch and tags, build and push with proper tagging
+            # Get the main image name from metadata
+            MAIN_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
+            REPO_NAME=$(echo "$MAIN_TAG" | cut -d':' -f1)
+            TAG_NAME=$(echo "$MAIN_TAG" | cut -d':' -f2)
+            
+            # Build and push with registry settings
+            dotnet publish /t:PublishContainer \
+              -p ContainerRegistry=${{ env.REGISTRY }} \
+              -p ContainerRepository=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]') \
+              -p ContainerImageTag=${TAG_NAME}
+            
+            # Tag additional versions
+            echo "${{ steps.meta.outputs.tags }}" | tail -n +2 | while read -r additional_tag; do
+              if [ -n "$additional_tag" ]; then
+                ADDITIONAL_TAG_NAME=$(echo "$additional_tag" | cut -d':' -f2)
+                docker tag ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]'):${TAG_NAME} ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]'):${ADDITIONAL_TAG_NAME}
+                docker push ${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]'):${ADDITIONAL_TAG_NAME}
+              fi
+            done
+          fi
+
+      - name: Output container image details
         if: github.event_name != 'pull_request'
-        uses: actions/attest-build-provenance@v1
-        with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          subject-digest: ${{ steps.build-and-push.outputs.digest }}
-          push-to-registry: true
+        run: |
+          echo "Container images pushed:"
+          echo "${{ steps.meta.outputs.tags }}"

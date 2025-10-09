@@ -1,6 +1,29 @@
 # NuGet Server Docker
 
-A lightweight, containerized NuGet v3 protocol server built with .NET 9, designed to run as a container appliance for hosting private NuGet packages.
+A lightweight, container#### Advanced Container Configuration
+
+You can customize the container build with additional properties:
+
+```bash
+# Build with custom registry and tag
+dotnet publish /t:PublishContainer \
+  -p ContainerRegistry=ghcr.io \
+  -p ContainerRepository=myorg/nuget-server \
+  -p ContainerImageTag=v1.0.0
+
+# Build with custom base image
+dotnet publish /t:PublishContainer \
+  -p ContainerBaseImage=mcr.microsoft.com/dotnet/aspnet:8.0-alpine
+
+# Build with custom environment variables
+dotnet publish /t:PublishContainer \
+  -p ContainerEnvironmentVariable="ASPNETCORE_ENVIRONMENT=Production" \
+  -p ContainerEnvironmentVariable="NuGetServer__ApiKey=your-key"
+
+# Build for multiple architectures (if supported by base image)
+dotnet publish /t:PublishContainer \
+  -p ContainerFamily=jammy-chiseled
+```rotocol server built with .NET 8, designed to run as a container appliance for hosting private NuGet packages.
 
 ## Features
 
@@ -8,20 +31,20 @@ A lightweight, containerized NuGet v3 protocol server built with .NET 9, designe
 - ✅ Package publishing (push) and deletion
 - ✅ Package search and query
 - ✅ Package metadata and registration endpoints
-- ✅ Built with .NET 9 and modern C# features
-- ✅ Multi-stage Dockerfile for optimized image size
+- ✅ Built with .NET 8 and modern C# features
+- ✅ Modern .NET SDK container build (no Dockerfiles needed)
 - ✅ Comprehensive logging and health checks
 - ✅ Configurable via environment variables or configuration files
-- ✅ Non-root container user for security
+- ✅ Non-root container execution with proper permissions
 - ✅ File system-based package storage
 
 ## Quick Start
 
 ### Building the Image
 
-Due to SSL certificate handling in some environments, we provide two Dockerfile options:
+This project uses the .NET SDK's built-in container build feature instead of traditional Dockerfiles for a more streamlined and optimized container creation process.
 
-#### Option 1: Using the build script (Recommended)
+#### Building with .NET SDK Container Build (Recommended)
 
 ```bash
 # Make the script executable (if not already)
@@ -31,32 +54,44 @@ chmod +x build.sh
 ./build.sh
 ```
 
-This script will:
-1. Build and publish the application locally
-2. Create a Docker image using the prebuilt binaries
-3. Tag the image as `nuget-server:latest`
+This script will use the .NET SDK to build and create a container image directly, tagged as `nuget-server:latest`.
 
-#### Option 2: Manual build with Dockerfile.prebuilt
+#### Manual build with .NET SDK
 
 ```bash
-# Build and publish the application
+# Navigate to the project directory
 cd src/NuGetServer
-dotnet publish -c Release -o bin/Release/net9.0/publish
-cd ../..
 
-# Build Docker image
-docker build -f Dockerfile.prebuilt -t nuget-server .
+# Build and create container using .NET SDK
+dotnet publish /t:PublishContainer
 ```
 
-#### Option 3: Standard multi-stage Dockerfile
+This will create a container image with optimized layers and proper .NET runtime configuration.
 
-If your environment has proper SSL certificates configured:
+#### Advanced Container Configuration
+
+You can customize the container build with additional properties:
 
 ```bash
-docker build -t nuget-server .
+# Build with custom registry and tag
+dotnet publish /t:PublishContainer \
+  -p ContainerRegistry=ghcr.io \
+  -p ContainerRepository=myorg/nuget-server \
+  -p ContainerImageTag=v1.0.0
+
+# Build with custom base image
+dotnet publish /t:PublishContainer \
+  -p ContainerBaseImage=mcr.microsoft.com/dotnet/aspnet:9.0-alpine
 ```
 
-**Note:** This may fail in some CI/CD environments due to SSL certificate validation issues with NuGet package restore.
+**Benefits of .NET SDK Container Build:**
+- No Dockerfile needed
+- Optimized layer caching
+- Automatic base image selection
+- Built-in security best practices
+- Consistent with .NET tooling
+
+> **Note**: This project has been modernized to use the .NET SDK's built-in container build feature. The legacy Dockerfiles have been moved to the `legacy-dockerfiles/` directory for reference.
 
 ### Running the Container
 
@@ -78,8 +113,9 @@ The server will be available at `http://localhost:5000`
 ### Using Docker
 
 ```bash
-# Build the image
-docker build -t nuget-server .
+# Build the image using .NET SDK
+cd src/NuGetServer
+dotnet publish /t:PublishContainer
 
 # Run the container
 docker run -d \
@@ -204,7 +240,7 @@ The server implements the following NuGet v3 protocol endpoints:
 
 ### Prerequisites
 
-- .NET 9 SDK
+- .NET 8 SDK
 - Docker (optional)
 
 ### Build and run locally
@@ -224,7 +260,7 @@ When running in Development mode, Swagger UI is available at `http://localhost:5
 
 ## CI/CD Pipeline
 
-The project includes a GitHub Actions CI/CD pipeline that automatically builds, tests, and publishes Docker images.
+The project includes a GitHub Actions CI/CD pipeline that automatically builds, tests, and publishes container images using the .NET SDK's built-in container build feature.
 
 ### Pipeline Features
 
@@ -233,6 +269,8 @@ The project includes a GitHub Actions CI/CD pipeline that automatically builds, 
 - **Container Registry**: Publishes images to GitHub Container Registry (GHCR)
 - **Multi-tag Strategy**: Creates tags for branches, versions, and commit SHAs
 - **Build Artifacts**: Uploads build artifacts for inspection
+- **.NET SDK Container Build**: Uses modern .NET container build instead of Dockerfiles
+- **Optimized Images**: Automatically optimized layers and security best practices
 
 ### Image Tags
 
@@ -265,16 +303,20 @@ The CI/CD pipeline can be triggered:
 3. **Version Tags** - On pushing tags matching `v*.*.*` pattern
 4. **Manually** - Via GitHub Actions UI (workflow_dispatch)
 
+The pipeline uses the .NET SDK's container build feature (`dotnet publish /t:PublishContainer`) for creating optimized container images without requiring Dockerfiles.
+
 ## Architecture
 
-This implementation follows modern .NET design principles:
+This implementation follows modern .NET design principles and uses the latest container build technologies:
 
-- **Minimal API**: Uses .NET 9 minimal APIs for efficient routing
+- **Minimal API**: Uses .NET 8 minimal APIs for efficient routing
 - **Dependency Injection**: Proper DI container usage for services
 - **Logging**: Structured logging with configurable log levels
 - **Health Checks**: Built-in health check support
 - **Configuration**: Flexible configuration using the Options pattern
 - **Security**: Runs as non-root user, supports API key authentication
+- **.NET SDK Container Build**: Uses modern .NET SDK container build instead of Dockerfiles
+- **Optimized Images**: Automatic layer optimization and base image selection
 
 ### Project Structure
 
