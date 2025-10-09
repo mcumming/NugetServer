@@ -69,11 +69,7 @@ public static class NuGetEndpoints
             }
         );
 
-        return Results.Json(serviceIndex, options: new System.Text.Json.JsonSerializerOptions
-        {
-            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-            WriteIndented = true
-        });
+        return Results.Json(serviceIndex, NuGetServerJsonContext.Default.ServiceIndex);
     }
 
     private static async Task<IResult> PushPackage(
@@ -186,11 +182,7 @@ public static class NuGetEndpoints
 
         var index = new RegistrationIndex(1, new[] { page });
 
-        return Results.Json(index, options: new System.Text.Json.JsonSerializerOptions
-        {
-            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-            WriteIndented = true
-        });
+        return Results.Json(index, NuGetServerJsonContext.Default.RegistrationIndex);
     }
 
     private static async Task<IResult> GetRegistrationLeaf(
@@ -218,26 +210,18 @@ public static class NuGetEndpoints
             $"{baseUrl}/package/{metadata.Id}/{metadata.Version}/content"
         );
 
-        return Results.Json(catalogEntry, options: new System.Text.Json.JsonSerializerOptions
-        {
-            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-            WriteIndented = true
-        });
+        return Results.Json(catalogEntry, NuGetServerJsonContext.Default.RegistrationLeaf);
     }
 
     private static async Task<IResult> SearchPackages(
         IPackageService packageService,
-        [FromQuery] string? q = null,
-        [FromQuery] int skip = 0,
-        [FromQuery] int take = 20,
-        [FromQuery] bool prerelease = true)
+        string? q = null,
+        int skip = 0,
+        int take = 20,
+        bool prerelease = true)
     {
         var result = await packageService.SearchPackagesAsync(q, skip, Math.Min(take, 100), prerelease);
 
-        return Results.Json(result, options: new System.Text.Json.JsonSerializerOptions
-        {
-            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-            WriteIndented = true
-        });
+        return Results.Json(result, NuGetServerJsonContext.Default.SearchResult);
     }
 }

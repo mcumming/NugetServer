@@ -8,9 +8,9 @@ echo "Building NuGet Server container using .NET SDK..."
 # Navigate to source directory
 cd "$(dirname "$0")/src/NuGetServer"
 
-# Build and publish as container using .NET SDK container build
-echo "Building container with .NET SDK..."
-dotnet publish /t:PublishContainer
+# Build and publish as container using .NET SDK container build with AOT
+echo "Building container with .NET SDK and AOT compilation..."
+dotnet publish /t:PublishContainer -c Release
 
 echo "Build complete! Docker image: nuget-server:latest"
 echo ""

@@ -5,10 +5,16 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     
+    <!-- AOT compilation for better performance -->
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <OptimizationPreference>Speed</OptimizationPreference>
+    <IlcOptimizationPreference>Speed</IlcOptimizationPreference>
+    
     <!-- Container build properties -->
     <IsPublishable>true</IsPublishable>
     <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
-    <ContainerBaseImage>mcr.microsoft.com/dotnet/aspnet:8.0</ContainerBaseImage>
+    <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime-deps:8.0</ContainerBaseImage>
     <ContainerRepository>nuget-server</ContainerRepository>
     <ContainerImageTag>latest</ContainerImageTag>
     <ContainerWorkingDirectory>/app</ContainerWorkingDirectory>
