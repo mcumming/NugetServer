@@ -1,29 +1,6 @@
 # NuGet Server Docker
 
-A lightweight, container#### Advanced Container Configuration
-
-You can customize the container build with additional properties:
-
-```bash
-# Build with custom registry and tag
-dotnet publish /t:PublishContainer \
-  -p ContainerRegistry=ghcr.io \
-  -p ContainerRepository=myorg/nuget-server \
-  -p ContainerImageTag=v1.0.0
-
-# Build with custom base image
-dotnet publish /t:PublishContainer \
-  -p ContainerBaseImage=mcr.microsoft.com/dotnet/aspnet:8.0-alpine
-
-# Build with custom environment variables
-dotnet publish /t:PublishContainer \
-  -p ContainerEnvironmentVariable="ASPNETCORE_ENVIRONMENT=Production" \
-  -p ContainerEnvironmentVariable="NuGetServer__ApiKey=your-key"
-
-# Build for multiple architectures (if supported by base image)
-dotnet publish /t:PublishContainer \
-  -p ContainerFamily=jammy-chiseled
-```rotocol server built with .NET 8, designed to run as a container appliance for hosting private NuGet packages.
+A lightweight, containerized NuGet v3 protocol server built with .NET 8, designed to run as a container appliance for hosting private NuGet packages.
 
 ## Features
 
@@ -82,7 +59,16 @@ dotnet publish /t:PublishContainer \
 
 # Build with custom base image
 dotnet publish /t:PublishContainer \
-  -p ContainerBaseImage=mcr.microsoft.com/dotnet/aspnet:9.0-alpine
+  -p ContainerBaseImage=mcr.microsoft.com/dotnet/aspnet:8.0-alpine
+
+# Build with custom environment variables
+dotnet publish /t:PublishContainer \
+  -p ContainerEnvironmentVariable="ASPNETCORE_ENVIRONMENT=Production" \
+  -p ContainerEnvironmentVariable="NuGetServer__ApiKey=your-key"
+
+# Build for a different base image family (if supported by the base image)
+dotnet publish /t:PublishContainer \
+  -p ContainerFamily=jammy-chiseled
 ```
 
 **Benefits of .NET SDK Container Build:**
@@ -96,7 +82,7 @@ dotnet publish /t:PublishContainer \
 
 ### Running the Container
 
-### Using Docker Compose
+#### Using Docker Compose
 
 ```bash
 # Start the server
@@ -111,7 +97,7 @@ docker-compose down
 
 The server will be available at `http://localhost:5000`
 
-### Using Docker
+#### Using Docker
 
 ```bash
 # Build the image using .NET SDK
@@ -357,10 +343,16 @@ src/NuGetServer/
 │   └── NuGetEndpoints.cs
 ├── Models/                # Data models
 │   ├── PackageMetadata.cs
+│   ├── ServerInfo.cs
 │   └── ServiceIndex.cs
 ├── Services/              # Business logic
 │   └── PackageService.cs
+├── JsonSerializerContext.cs  # Source-generated JSON serialization
 └── Program.cs            # Application entry point
+
+tests/
+├── NuGetServer.UnitTests/         # Unit tests
+└── NuGetServer.IntegrationTests/  # Endpoint integration tests
 ```
 
 ## Security Considerations
