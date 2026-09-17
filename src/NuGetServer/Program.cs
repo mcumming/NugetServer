@@ -1,8 +1,16 @@
+using NuGetServer;
 using NuGetServer.Configuration;
 using NuGetServer.Endpoints;
+using NuGetServer.Models;
 using NuGetServer.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure JSON serialization for AOT compatibility
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.TypeInfoResolverChain.Insert(0, NuGetServerJsonContext.Default);
+});
 
 // Configure options from appsettings.json and environment variables
 builder.Services.Configure<NuGetServerOptions>(
@@ -63,20 +71,21 @@ app.MapNuGetEndpoints();
 app.MapHealthChecks("/health");
 
 // Root endpoint with information
-app.MapGet("/", () => Results.Json(new
-{
-    name = "NuGet Server",
-    version = "3.0.0",
-    description = "A lightweight NuGet v3 protocol server",
-    endpoints = new
-    {
-        serviceIndex = "/v3/index.json",
-        health = "/health",
-        swagger = "/swagger"
-    }
-}));
+app.MapGet("/", () => Results.Json(new ServerInfo(
+    "NuGet Server",
+    "3.0.0",
+    "A lightweight NuGet v3 protocol server",
+    new ServerEndpoints(
+        "/v3/index.json",
+        "/health",
+        "/swagger"
+    )
+), NuGetServerJsonContext.Default.ServerInfo));
 
 app.Logger.LogInformation("NuGet Server starting on {Environment}", app.Environment.EnvironmentName);
 app.Logger.LogInformation("Packages directory: {PackagesPath}", packagesPath);
 
 app.Run();
+
+// Make the Program class accessible for integration tests
+public partial class Program { }

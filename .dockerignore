@@ -1,3 +1,6 @@
+# .dockerignore for .NET SDK Container Build
+# This file is used by the .NET SDK container build feature
+
 **/.classpath
 **/.dockerignore
 **/.env
@@ -14,16 +17,19 @@
 **/azds.yaml
 **/charts
 **/docker-compose*
-**/Dockerfile*
 **/node_modules
 **/npm-debug.log
 **/secrets.dev.yaml
 **/values.dev.yaml
 LICENSE
 README.md
+ARCHITECTURE.md
+EXAMPLES.md
+IMPLEMENTATION.md
+build.sh
+legacy-dockerfiles/
 **/bin/*
-!**/bin/Release/net9.0/publish/**
 **/obj/*
-!**/obj/project.assets.json
-!**/obj/*.props
-!**/obj/*.targets
+
+# Allow specific build outputs if needed
+!**/bin/Release/**/publish/**

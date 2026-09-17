@@ -1,23 +1,16 @@
 #!/bin/bash
-# Build script for NuGet Server Docker image
+# Build script for NuGet Server using .NET SDK container build
 
 set -e
 
-echo "Building NuGet Server..."
+echo "Building NuGet Server container using .NET SDK..."
 
 # Navigate to source directory
 cd "$(dirname "$0")/src/NuGetServer"
 
-# Restore and publish the application
-echo "Publishing application..."
-dotnet publish -c Release -o bin/Release/net9.0/publish
-
-# Navigate back to root
-cd ../..
-
-# Build Docker image using prebuilt binaries
-echo "Building Docker image..."
-docker build -f Dockerfile.prebuilt -t nuget-server:latest .
+# Build and publish as container using .NET SDK container build with AOT
+echo "Building container with .NET SDK and AOT compilation..."
+dotnet publish /t:PublishContainer -c Release
 
 echo "Build complete! Docker image: nuget-server:latest"
 echo ""
